@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // 创建axios实例
 const api = axios.create({
-  baseURL: 'http://localhost:5001/api', // 后端API基础URL
+  baseURL: 'https://d-scoring-backend.onrender.com/api', // 后端API基础URL
   headers: {
     'Content-Type': 'application/json',
   },
