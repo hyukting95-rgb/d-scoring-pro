@@ -10,6 +10,10 @@ const ProjectSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  projectName: {
+    type: String,
+    required: true,
+  },
   content: {
     type: String,
     required: true,
@@ -51,6 +55,7 @@ const ProjectSchema = new mongoose.Schema({
     selectedDesignType: String,
     selectedPackageType: String,
     selectedManualType: String,
+    projectName: String,
     cmfValue: Number,
     cmfPerson: String,
     cmfWorkDays: Number,

@@ -54,6 +54,7 @@ const App: React.FC = () => {
   const [selectedDesignType, setSelectedDesignType] = useState<DesignProjectType | null>(null);
   const [selectedPackageType, setSelectedPackageType] = useState<PackageProjectType | null>(null);
   const [selectedManualType, setSelectedManualType] = useState<ManualProjectType | null>(null);
+  const [projectName, setProjectName] = useState('');
   
   const [cmfValue, setCmfValue] = useState<number>(0.5);
   const [cmfPerson, setCmfPerson] = useState('');
@@ -294,6 +295,7 @@ const App: React.FC = () => {
 
   const resetForm = () => {
     setSelectedDesignType(null); setSelectedPackageType(null); setSelectedManualType(null);
+    setProjectName('');
     setSelectedAddons([]); setAddonPersons({}); setAddonWorkDays({});
     setCmfpPerson1(''); setCmfpPerson2(''); setCmfPerson(''); setMainCreator('');
     setPackagePerson(''); setManualPerson('');
@@ -311,6 +313,7 @@ const App: React.FC = () => {
     setSelectedDesignType(s.selectedDesignType);
     setSelectedPackageType(s.selectedPackageType);
     setSelectedManualType(s.selectedManualType);
+    setProjectName(project.projectName || '');
     setCmfValue(s.cmfValue);
     setCmfPerson(s.cmfPerson);
     setCmfWorkDays(s.cmfWorkDays || 0);
@@ -383,6 +386,7 @@ const App: React.FC = () => {
   const handleConfirm = async () => {
     if (!currentUser) return;
     if (!selectedDesignType && !selectedPackageType && !selectedManualType) return alert('请至少选择一个项目组成部分');
+    if (!projectName.trim()) return alert('请输入项目名称');
     
     const newProjectId = editingProjectId || generateId(projectRecords);
     const now = new Date();
@@ -438,6 +442,7 @@ const App: React.FC = () => {
     const newProject: ProjectRecord = {
       id: newProjectId,
       type: selectedDesignType || '组合项',
+      projectName: projectName.trim(),
       content: contents.join(' + '),
       entryTime,
       score: currentScore,
@@ -451,6 +456,7 @@ const App: React.FC = () => {
         selectedDesignType,
         selectedPackageType,
         selectedManualType,
+        projectName: projectName.trim(),
         cmfValue,
         cmfPerson,
         cmfWorkDays,
@@ -838,6 +844,17 @@ const App: React.FC = () => {
                     <h2 className="text-xl font-bold text-white">录入检查</h2>
                   </div>
                   <div className="space-y-4 mb-8">
+                     <div className="p-3 bg-slate-900/40 rounded-xl space-y-2">
+                        <label className="text-slate-500 text-xs font-bold block mb-2">项目名称</label>
+                        <input 
+                          type="text" 
+                          value={projectName}
+                          onChange={e => setProjectName(e.target.value)}
+                          className="w-full glass-input rounded-xl px-4 py-3 text-white"
+                          placeholder="请输入项目名称（必填）"
+                          required
+                        />
+                     </div>
                      <div className="flex justify-between p-3 bg-slate-900/40 rounded-xl">
                         <span className="text-slate-500 text-xs font-bold">已选组成部分</span>
                         <span className="text-white font-mono text-xs">{(selectedDesignType?1:0)+(selectedPackageType?1:0)+(selectedManualType?1:0)} 项</span>

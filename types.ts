@@ -41,6 +41,7 @@ export interface User {
 export interface ProjectRecord {
   id: string;
   type: string;
+  projectName: string;
   content: string;
   entryTime: string;
   score: number;
@@ -54,6 +55,7 @@ export interface ProjectRecord {
     selectedDesignType: DesignProjectType | null;
     selectedPackageType: PackageProjectType | null;
     selectedManualType: ManualProjectType | null;
+    projectName: string;
     cmfValue: number;
     cmfPerson: string;
     cmfWorkDays: number;

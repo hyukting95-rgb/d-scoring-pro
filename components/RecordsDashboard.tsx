@@ -269,6 +269,7 @@ const RecordsDashboard: React.FC<Props> = ({
                   </button>
                 </th>
                 <th className="px-4 py-5">UID</th>
+                <th className="px-6 py-5">项目名称</th>
                 <th className="px-6 py-5">项目组成内容</th>
                 {isAdmin && <th className="px-6 py-5">录入者</th>}
                 <th className="px-6 py-5 text-center">工作天数汇总</th>
@@ -296,6 +297,9 @@ const RecordsDashboard: React.FC<Props> = ({
                     <div className="flex items-center gap-1.5 font-mono text-indigo-400 text-xs font-black">
                       <Hash className="w-3 h-3 opacity-50" /> {p.id}
                     </div>
+                  </td>
+                  <td className="px-6 py-6">
+                    <p className="text-white text-sm font-bold">{p.projectName}</p>
                   </td>
                   <td className="px-6 py-6">
                     <p className="text-white text-sm font-bold">{p.type}</p>
@@ -374,6 +378,7 @@ const RecordsDashboard: React.FC<Props> = ({
               <tr className="bg-slate-900/20 text-slate-500 text-[10px] font-black uppercase tracking-widest border-b border-white/5">
                 <th className="px-8 py-5">获得者</th>
                 <th className="px-6 py-5">项目 UID</th>
+                <th className="px-6 py-5">项目名称</th>
                 <th className="px-6 py-5">内容明细</th>
                 <th className="px-6 py-5 text-center">个人工作天数</th>
                 <th className="px-6 py-5 text-center">分值</th>
@@ -398,6 +403,9 @@ const RecordsDashboard: React.FC<Props> = ({
                       <div className="flex items-center gap-1 font-mono text-indigo-400 text-xs font-bold">
                         <Hash className="w-2.5 h-2.5 opacity-40" /> {r.projectId}
                       </div>
+                    </td>
+                    <td className="px-6 py-6">
+                      <span className="text-white text-sm font-bold">{project?.projectName || '未命名项目'}</span>
                     </td>
                     <td className="px-6 py-6">
                       <span className="text-slate-200 text-xs font-medium">{r.content}</span>
