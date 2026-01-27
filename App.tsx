@@ -349,11 +349,29 @@ const App: React.FC = () => {
         const label = scoringConfig.cmf.find(c => c.value === cmfValue)?.label || 'CMF';
         desc.push(`${label}(${cmfValue})`);
         parts.push({ label, value: cmfValue });
+        // 添加额外加分项积分
+        selectedAddons.forEach(id => {
+          const addon = scoringConfig.addons.find(a => a.id === id);
+          if (addon) {
+            score += addon.score;
+            desc.push(`${addon.label}(${addon.score})`);
+            parts.push({ label: addon.label, value: addon.score });
+          }
+        });
       } else if (selectedDesignType === DesignProjectType.THREE_SERIES_CMFP) {
         const total = 1.5; 
         score += total;
         desc.push('CMFP(1.5)');
         parts.push({ label: 'CMFP', value: total });
+        // 添加额外加分项积分
+        selectedAddons.forEach(id => {
+          const addon = scoringConfig.addons.find(a => a.id === id);
+          if (addon) {
+            score += addon.score;
+            desc.push(`${addon.label}(${addon.score})`);
+            parts.push({ label: addon.label, value: addon.score });
+          }
+        });
       } else {
         let pScore = baseScore;
         parts.push({ label: '基础分', value: baseScore });
@@ -400,6 +418,16 @@ const App: React.FC = () => {
       if (selectedDesignType === DesignProjectType.THREE_SERIES_CMF) {
         newPersRecords.push({ id: Math.random().toString(36).substring(2, 9), person: cmfPerson || '未命名', projectId: newProjectId, entryTime, score: cmfValue, content: selectedDesignType, workDays: cmfWorkDays, createdBy: currentUser.id });
         totalDays += cmfWorkDays;
+        // 处理额外加分项
+        selectedAddons.forEach(id => {
+          const addon = scoringConfig.addons.find(a => a.id === id);
+          if (addon) {
+            const p = isIndependent === 'yes' ? cmfPerson : (addonPersons[id] || '协作');
+            const d = addonWorkDays[id] || 0;
+            newPersRecords.push({ id: Math.random().toString(36).substring(2, 9), person: p, projectId: newProjectId, entryTime, score: addon.score, content: selectedDesignType + ' (' + addon.label + ')', workDays: d, createdBy: currentUser.id });
+            totalDays += d;
+          }
+        });
       } else if (selectedDesignType === DesignProjectType.THREE_SERIES_CMFP) {
         const config = scoringConfig.cmfp.find(c => c.mode === cmfpMode);
         if (cmfpMode === 'additional') {
@@ -410,6 +438,16 @@ const App: React.FC = () => {
           newPersRecords.push({ id: Math.random().toString(36).substring(2, 9), person: cmfpPerson1 || '主责人员', projectId: newProjectId, entryTime, score: config?.main || 1.5, content: selectedDesignType, workDays: cmfpMainWorkDays, createdBy: currentUser.id });
           totalDays += cmfpMainWorkDays;
         }
+        // 处理额外加分项
+        selectedAddons.forEach(id => {
+          const addon = scoringConfig.addons.find(a => a.id === id);
+          if (addon) {
+            const p = addonPersons[id] || '协作';
+            const d = addonWorkDays[id] || 0;
+            newPersRecords.push({ id: Math.random().toString(36).substring(2, 9), person: p, projectId: newProjectId, entryTime, score: addon.score, content: selectedDesignType + ' (' + addon.label + ')', workDays: d, createdBy: currentUser.id });
+            totalDays += d;
+          }
+        });
       } else {
         newPersRecords.push({ id: Math.random().toString(36).substring(2, 9), person: mainCreator || '主创', projectId: newProjectId, entryTime, score: baseScore, content: selectedDesignType + ' (基础)', workDays: designBaseWorkDays, createdBy: currentUser.id });
         totalDays += designBaseWorkDays;
@@ -622,87 +660,185 @@ const App: React.FC = () => {
                 {selectedDesignType && (
                   <div className="bg-slate-900/30 rounded-2xl p-6 border border-slate-800/50 space-y-6">
                     {selectedDesignType === DesignProjectType.THREE_SERIES_CMF && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-3">
-                           <label className="text-xs font-bold text-slate-500 uppercase">选择视觉指导</label>
-                           <div className="flex flex-col gap-2">
-                             {scoringConfig.cmf.map(o => (
-                               <button key={o.value} onClick={() => setCmfValue(o.value)} className={`p-3 text-left rounded-xl border text-sm transition-all ${cmfValue === o.value ? 'bg-indigo-500/20 border-indigo-500 text-white' : 'bg-slate-900 border-slate-800 text-slate-400'}`}>
-                                 {o.label} (+{o.value})
-                               </button>
-                             ))}
-                           </div>
+                      <div className="space-y-6">
+                        <div>
+                          <label className="text-xs font-bold text-slate-500 uppercase mb-3 block">选择视觉指导</label>
+                          <div className="grid grid-cols-2 gap-3">
+                            {scoringConfig.cmf.map(o => (
+                              <button key={o.value} onClick={() => setCmfValue(o.value)} className={`p-3 text-center rounded-xl border text-sm transition-all ${cmfValue === o.value ? 'bg-indigo-500/20 border-indigo-500 text-white' : 'bg-slate-900 border-slate-800 text-slate-400'}`}>{o.label} (+{o.value})</button>
+                            ))}
+                          </div>
                         </div>
-                        <div className="space-y-4">
-                           <div className="space-y-2">
-                              <label className="text-xs font-bold text-slate-500 uppercase">负责人</label>
-                              <input value={cmfPerson} onChange={e => setCmfPerson(e.target.value)} className="w-full glass-input rounded-xl px-4 py-3 text-white" placeholder="输入负责人姓名" />
-                           </div>
-                           <div className="space-y-2">
-                              <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-1">
-                                <Clock className="w-3 h-3" /> 工作天数
-                              </label>
-                              <input type="number" step="0.5" min="0" value={cmfWorkDays} onChange={e => setCmfWorkDays(parseFloat(e.target.value) || 0)} className="w-full glass-input rounded-xl px-4 py-2 text-white font-mono" placeholder="0.5 的倍数" />
-                           </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-4">
+                             <div className="space-y-2">
+                                <label className="text-xs font-bold text-slate-500 uppercase">负责人</label>
+                                <input value={cmfPerson} onChange={e => setCmfPerson(e.target.value)} className="w-full glass-input rounded-xl px-4 py-3 text-white" placeholder="输入负责人姓名" />
+                             </div>
+                             <div className="space-y-2">
+                                <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-1">
+                                  <Clock className="w-3 h-3" /> 工作天数
+                                </label>
+                                <input type="number" step="0.5" min="0" value={cmfWorkDays} onChange={e => setCmfWorkDays(parseFloat(e.target.value) || 0)} className="w-full glass-input rounded-xl px-4 py-2 text-white font-mono" placeholder="0.5 的倍数" />
+                             </div>
+                          </div>
+                          <div className="space-y-4">
+                            <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">独立完成</label>
+                            <div className="bg-slate-900/40 p-4 rounded-xl border border-white/5">
+                              <div className="flex gap-1">
+                                 <button onClick={() => setIsIndependent('yes')} className={`flex-1 py-3 rounded-lg border text-sm font-bold transition-all ${isIndependent === 'yes' ? 'bg-indigo-600 border-indigo-400 text-white shadow-lg' : 'bg-slate-900 border-slate-800 text-slate-400'}`}>是</button>
+                                 <button onClick={() => setIsIndependent('no')} className={`flex-1 py-3 rounded-lg border text-sm font-bold transition-all ${isIndependent === 'no' ? 'bg-indigo-600 border-indigo-400 text-white shadow-lg' : 'bg-slate-900 border-slate-800 text-slate-400'}`}>否</button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <label className="text-xs font-bold text-slate-500 uppercase mb-3 block">额外加分项录入</label>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {scoringConfig.addons.map(a => (
+                              <div key={a.id} className={`p-4 rounded-xl border transition-all space-y-3 ${selectedAddons.includes(a.id) ? 'bg-indigo-500/10 border-indigo-500' : 'bg-slate-900 border-slate-800'}`}>
+                                <button 
+                                  onClick={() => setSelectedAddons(prev => prev.includes(a.id) ? prev.filter(x => x !== a.id) : [...prev, a.id])}
+                                  className={`w-full text-left flex justify-between items-center`}
+                                >
+                                  <span className={`text-xs font-bold ${selectedAddons.includes(a.id) ? 'text-white' : 'text-slate-500'}`}>{a.label} (+{a.score})</span>
+                                  <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${selectedAddons.includes(a.id) ? 'bg-indigo-500 border-indigo-500' : 'border-slate-700'}`}>
+                                    {selectedAddons.includes(a.id) && <div className="w-2 h-2 bg-white rounded-full shadow-inner" />}
+                                  </div>
+                                </button>
+                                {selectedAddons.includes(a.id) && (
+                                  <div className="grid grid-cols-2 gap-3 animate-in fade-in slide-in-from-top-1">
+                                    <div>
+                                      <label className="text-[10px] text-slate-500 mb-1 block">人员</label>
+                                      <input 
+                                        className="w-full glass-input rounded-lg px-2 py-1.5 text-xs text-white"
+                                        placeholder={isIndependent === 'yes' ? cmfPerson : "姓名"}
+                                        disabled={isIndependent === 'yes'}
+                                        value={isIndependent === 'yes' ? cmfPerson : (addonPersons[a.id] || '')}
+                                        onChange={(e) => setAddonPersons({...addonPersons, [a.id]: e.target.value})}
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-[10px] text-slate-500 mb-1 block flex items-center gap-1"><Clock className="w-2.5 h-2.5"/> 天数</label>
+                                      <input 
+                                        type="number" step="0.5" min="0"
+                                        className="w-full glass-input rounded-lg px-2 py-1.5 text-xs text-white font-mono"
+                                        value={addonWorkDays[a.id] || 0}
+                                        onChange={(e) => setAddonWorkDays({...addonWorkDays, [a.id]: parseFloat(e.target.value) || 0})}
+                                      />
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     )}
 
                     {selectedDesignType === DesignProjectType.THREE_SERIES_CMFP && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-4">
-                           <label className="text-xs font-bold text-slate-500 uppercase">选择项</label>
-                           <div className="flex flex-col gap-2">
-                             <button 
-                               onClick={() => setCmfpMode('additional')} 
-                               className={`p-4 text-left rounded-xl border text-sm transition-all ${cmfpMode === 'additional' ? 'bg-indigo-500/20 border-indigo-500 text-white shadow-lg' : 'bg-slate-900 border-slate-800 text-slate-400'}`}
-                             >
-                               有额外轻量化插画制作支持
-                             </button>
-                             <button 
-                               onClick={() => setCmfpMode('none')} 
-                               className={`p-4 text-left rounded-xl border text-sm transition-all ${cmfpMode === 'none' ? 'bg-indigo-500/20 border-indigo-500 text-white shadow-lg' : 'bg-slate-900 border-slate-800 text-slate-400'}`}
-                             >
-                               无额外轻量化插画制作支持
-                             </button>
-                           </div>
-                        </div>
-                        <div className="space-y-4">
-                           <div className="p-4 bg-slate-900 rounded-xl border border-white/5 space-y-4">
-                              <div className="grid grid-cols-1 gap-3">
-                                 <div>
-                                   <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">
-                                     主负责人 ({cmfpMode === 'additional' ? `+${scoringConfig.cmfp[0].main}` : `+${scoringConfig.cmfp[1].main}`})
-                                   </label>
-                                   <input value={cmfpPerson1} onChange={e => setCmfpPerson1(e.target.value)} className="w-full glass-input rounded-lg px-3 py-2 text-white text-xs" placeholder="姓名" />
-                                 </div>
-                                 <div>
-                                   <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block flex items-center gap-1">
-                                     <Clock className="w-2.5 h-2.5" /> 主创天数
-                                   </label>
-                                   <input type="number" step="0.5" min="0" value={cmfpMainWorkDays} onChange={e => setCmfpMainWorkDays(parseFloat(e.target.value) || 0)} className="w-full glass-input rounded-lg px-3 py-2 text-white text-xs font-mono" placeholder="天数" />
-                                 </div>
-                              </div>
-                           </div>
-
-                           {cmfpMode === 'additional' && (
-                             <div className="p-4 bg-indigo-500/5 rounded-xl border border-indigo-500/20 space-y-4 animate-in fade-in slide-in-from-top-2">
-                                <div className="grid grid-cols-1 gap-3">
-                                   <div>
-                                     <label className="text-[10px] font-bold text-indigo-400 uppercase mb-1 block">
-                                       支持负责人 (插画制作) (+{scoringConfig.cmfp[0].support})
-                                     </label>
-                                     <input value={cmfpPerson2} onChange={e => setCmfpPerson2(e.target.value)} className="w-full glass-input rounded-lg px-3 py-2 text-white text-xs border-indigo-500/30" placeholder="姓名" />
-                                   </div>
-                                   <div>
-                                     <label className="text-[10px] font-bold text-indigo-400 uppercase mb-1 block flex items-center gap-1">
-                                       <Clock className="w-2.5 h-2.5" /> 支持天数
-                                     </label>
-                                     <input type="number" step="0.5" min="0" value={cmfpSupportWorkDays} onChange={e => setCmfpSupportWorkDays(parseFloat(e.target.value) || 0)} className="w-full glass-input rounded-lg px-3 py-2 text-white text-xs font-mono" placeholder="天数" />
+                      <div className="space-y-6">
+                        <div>
+                          <label className="text-xs font-bold text-slate-500 uppercase mb-3 block">选择项</label>
+                          <div className="grid grid-cols-2 gap-3 mb-6">
+                            <button 
+                              onClick={() => setCmfpMode('additional')} 
+                              className={`p-4 text-center rounded-xl border text-sm transition-all ${cmfpMode === 'additional' ? 'bg-indigo-500/20 border-indigo-500 text-white shadow-lg' : 'bg-slate-900 border-slate-800 text-slate-400'}`}
+                            >
+                              有额外轻量化插画制作支持
+                            </button>
+                            <button 
+                              onClick={() => setCmfpMode('none')} 
+                              className={`p-4 text-center rounded-xl border text-sm transition-all ${cmfpMode === 'none' ? 'bg-indigo-500/20 border-indigo-500 text-white shadow-lg' : 'bg-slate-900 border-slate-800 text-slate-400'}`}
+                            >
+                              无额外轻量化插画制作支持
+                            </button>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-4">
+                               <div className="p-4 bg-slate-900 rounded-xl border border-white/5 space-y-4">
+                                  <div className="grid grid-cols-1 gap-3">
+                                     <div>
+                                       <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">
+                                         主负责人 ({cmfpMode === 'additional' ? `+${scoringConfig.cmfp[0].main}` : `+${scoringConfig.cmfp[1].main}`})
+                                       </label>
+                                       <input value={cmfpPerson1} onChange={e => setCmfpPerson1(e.target.value)} className="w-full glass-input rounded-lg px-3 py-2 text-white text-xs" placeholder="姓名" />
+                                     </div>
+                                     <div>
+                                       <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block flex items-center gap-1">
+                                         <Clock className="w-2.5 h-2.5" /> 主创天数
+                                       </label>
+                                       <input type="number" step="0.5" min="0" value={cmfpMainWorkDays} onChange={e => setCmfpMainWorkDays(parseFloat(e.target.value) || 0)} className="w-full glass-input rounded-lg px-3 py-2 text-white text-xs font-mono" placeholder="天数" />
+                                     </div>
+                                  </div>
+                               </div>
+                            </div>
+                            
+                            {cmfpMode === 'additional' && (
+                              <div className="space-y-4">
+                                <div className="p-4 bg-indigo-500/5 rounded-xl border border-indigo-500/20 space-y-4 animate-in fade-in slide-in-from-top-2">
+                                   <div className="grid grid-cols-1 gap-3">
+                                     <div>
+                                       <label className="text-[10px] font-bold text-indigo-400 uppercase mb-1 block">
+                                         支持负责人 (插画制作) (+{scoringConfig.cmfp[0].support})
+                                       </label>
+                                       <input value={cmfpPerson2} onChange={e => setCmfpPerson2(e.target.value)} className="w-full glass-input rounded-lg px-3 py-2 text-white text-xs border-indigo-500/30" placeholder="姓名" />
+                                     </div>
+                                     <div>
+                                       <label className="text-[10px] font-bold text-indigo-400 uppercase mb-1 block flex items-center gap-1">
+                                         <Clock className="w-2.5 h-2.5" /> 支持天数
+                                       </label>
+                                       <input type="number" step="0.5" min="0" value={cmfpSupportWorkDays} onChange={e => setCmfpSupportWorkDays(parseFloat(e.target.value) || 0)} className="w-full glass-input rounded-lg px-3 py-2 text-white text-xs font-mono" placeholder="天数" />
+                                     </div>
                                    </div>
                                 </div>
-                             </div>
-                           )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <label className="text-xs font-bold text-slate-500 uppercase mb-3 block">额外加分项录入</label>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {scoringConfig.addons.map(a => (
+                              <div key={a.id} className={`p-4 rounded-xl border transition-all space-y-3 ${selectedAddons.includes(a.id) ? 'bg-indigo-500/10 border-indigo-500' : 'bg-slate-900 border-slate-800 text-slate-500'}`}>
+                                <button 
+                                  onClick={() => setSelectedAddons(prev => prev.includes(a.id) ? prev.filter(x => x !== a.id) : [...prev, a.id])}
+                                  className={`w-full text-left flex justify-between items-center`}
+                                >
+                                  <span className={`text-xs font-bold ${selectedAddons.includes(a.id) ? 'text-white' : 'text-slate-500'}`}>{a.label} (+{a.score})</span>
+                                  <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${selectedAddons.includes(a.id) ? 'bg-indigo-500 border-indigo-500' : 'border-slate-700'}`}>
+                                    {selectedAddons.includes(a.id) && <div className="w-2 h-2 bg-white rounded-full shadow-inner" />}
+                                  </div>
+                                </button>
+                                {selectedAddons.includes(a.id) && (
+                                  <div className="grid grid-cols-2 gap-3 animate-in fade-in slide-in-from-top-1">
+                                    <div>
+                                      <label className="text-[10px] text-slate-500 mb-1 block">人员</label>
+                                      <input 
+                                        className="w-full glass-input rounded-lg px-2 py-1.5 text-xs text-white"
+                                        placeholder="姓名"
+                                        value={addonPersons[a.id] || ''}
+                                        onChange={(e) => setAddonPersons({...addonPersons, [a.id]: e.target.value})}
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-[10px] text-slate-500 mb-1 block flex items-center gap-1"><Clock className="w-2.5 h-2.5"/> 天数</label>
+                                      <input 
+                                        type="number" step="0.5" min="0"
+                                        className="w-full glass-input rounded-lg px-2 py-1.5 text-xs text-white font-mono"
+                                        value={addonWorkDays[a.id] || 0}
+                                        onChange={(e) => setAddonWorkDays({...addonWorkDays, [a.id]: parseFloat(e.target.value) || 0})}
+                                      />
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     )}
